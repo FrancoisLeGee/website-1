@@ -181,8 +181,23 @@ def get_squad_logo_html(squad, size=30):
 # 📂 DATA LOADING
 # ═══════════════════════════════════════════════════════════
 
+
+def _setup_kaggle():
+    """Set Kaggle credentials from Streamlit secrets."""
+    token = st.secrets.get("KAGGLE_API_TOKEN", os.environ.get("KAGGLE_API_TOKEN", ""))
+    if token:
+        os.environ["KAGGLE_API_TOKEN"] = token
+    # Legacy format
+    username = st.secrets.get("KAGGLE_USERNAME", os.environ.get("KAGGLE_USERNAME", ""))
+    key = st.secrets.get("KAGGLE_KEY", os.environ.get("KAGGLE_KEY", ""))
+    if username and key:
+        os.environ["KAGGLE_USERNAME"] = username
+        os.environ["KAGGLE_KEY"] = key
+
+
 @st.cache_data(ttl=3600)
 def load_data():
+    _setup_kaggle()
     """Load FBref data via kagglehub."""
     if not HAS_KAGGLE:
         st.error("kagglehub nicht installiert")
