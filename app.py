@@ -197,21 +197,36 @@ def _setup_kaggle():
 
 @st.cache_data(ttl=3600)
 def load_data():
-    _setup_kaggle()
-    """Load FBref data via kagglehub."""
-    if not HAS_KAGGLE:
-        st.error("kagglehub nicht installiert")
-        return pd.DataFrame()
+    """Load FBref data from bundled CSV."""
     try:
-        path = kagglehub.dataset_download("sujithmandala/fbref-bundesliga-player-stats-2425-season")
-        files = glob.glob(os.path.join(path, "**", "*.csv"), recursive=True)
-        if not files:
-            st.error("Keine CSV-Dateien gefunden")
-            return pd.DataFrame()
-        df = pd.read_csv(files[0])
+        csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.csv")
+        df = pd.read_csv(csv_path)
     except Exception as e:
         st.error(f"Datenlade-Fehler: {e}")
         return pd.DataFrame()
+
+    col_map = {
+        "player": "Player", "squad": "Squad", "pos": "Pos", "comp": "Comp",
+        "age": "Age", "nation": "Nation", "born": "Born",
+        "Matches Played": "MP", "Goals": "Gls", "Assists": "Ast",
+        "Goals & Assists": "G+A", "Non Penalty Goals": "G-PK",
+        "Penalty Kicks Made": "PK", "Expected Goals": "xG", "Exp NPG": "npxG",
+        "Progressive Carries": "PrgC", "Progressive Passes": "PrgP",
+        "Goals p 90": "Gls_p90", "Assists p 90": "Ast_p90",
+        "Tackles Won": "TklW", "Interceptions": "Int",
+        "Goals Against": "GA", "Goals against p 90": "GA90",
+        "Saves": "Saves", "Saves %": "Save%", "Clean Sheets": "CS",
+        "% Clean sheets": "CS%", "Key passes": "KP",
+        "Passes into penalty area": "PPA", "Total Shots": "Sh",
+        "% Shots on target": "SoT%", "Shots p 90": "Sh_p90",
+        "Goals per shot": "G/Sh", "Goals per shot on target": "G/SoT",
+        "Avg Mins per Match": "AvgMin",
+    }
+    df = df.rename(columns=col_map)
+    if "MP" in df.columns and "AvgMin" in df.columns:
+        df["Min"] = (df["MP"] * df["AvgMin"]).round(0)
+    if "Min" in df.columns:
+        df["90s"] = (df["Min"] / 90).round(1)
 
     # Clean
     if "Comp" in df.columns:
